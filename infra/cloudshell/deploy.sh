@@ -111,9 +111,7 @@ if aws lambda get-function --region "$REGION" --function-name "$FUNCTION_NAME" >
     --role "$ROLE_ARN" \
     --timeout 30 \
     --memory-size 1024 \
-    --architectures x86_64 \
-    --layers "$LAYER_ARN" \
-    --environment file://environment.json >/dev/null
+    --layers "$LAYER_ARN" >/dev/null
 else
   echo "Creating the Lambda function..."
   for attempt in 1 2 3 4 5 6; do
@@ -145,7 +143,8 @@ aws lambda wait function-active-v2 --region "$REGION" --function-name "$FUNCTION
 aws lambda put-function-concurrency \
   --region "$REGION" \
   --function-name "$FUNCTION_NAME" \
-  --reserved-concurrent-executions 2 >/dev/null
+  --reserved-concurrent-executions 2 >/dev/null 2>&1 || \
+  echo "Reserved concurrency is unavailable for this account; continuing with account defaults."
 
 if ! aws lambda get-function-url-config --region "$REGION" --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
   echo "Creating the public application URL..."

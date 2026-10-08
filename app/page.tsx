@@ -5,6 +5,7 @@ import {
   AudioLines,
   BarChart3,
   Bot,
+  BrainCircuit,
   Check,
   ChevronRight,
   CircleDollarSign,
@@ -16,6 +17,7 @@ import {
   Menu,
   MessageCircle,
   Mic,
+  Palette,
   PhoneOff,
   Plus,
   RefreshCcw,
@@ -23,6 +25,7 @@ import {
   Sparkles,
   Volume2,
   WandSparkles,
+  Zap,
   X,
 } from "lucide-react";
 import NextImage from "next/image";
@@ -38,6 +41,12 @@ const starterPrompts = [
   "Explain Kubernetes in simple words",
 ];
 
+const imagePromptIdeas = [
+  "Editorial product shot",
+  "Futuristic city at dusk",
+  "Minimal 3D app icon",
+];
+
 export default function Home() {
   const [tab, setTab] = useState<Tab>("chat");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -46,11 +55,29 @@ export default function Home() {
   const [error, setError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState<number | null>(null);
+  const [budget, setBudget] = useState<{ spendUsd: number; budgetUsd: number } | null>(null);
 
   const title = useMemo(
     () => ({ chat: "Chat", image: "Image Studio", voice: "Voice Agent", usage: "Usage & Health" })[tab],
     [tab],
   );
+
+  useEffect(() => {
+    let active = true;
+    async function loadBudget() {
+      try {
+        const response = await fetch("/api/usage", { cache: "no-store" });
+        const data = (await response.json()) as { spendUsd?: number; budgetUsd?: number };
+        if (active && response.ok) setBudget({ spendUsd: Number(data.spendUsd || 0), budgetUsd: Number(data.budgetUsd || 20) });
+      } catch {
+        // The workspace stays fully usable if metering is temporarily unavailable.
+      }
+    }
+    void loadBudget();
+    return () => { active = false; };
+  }, []);
+
+  const budgetPercent = budget ? Math.min(100, (budget.spendUsd / Math.max(1, budget.budgetUsd)) * 100) : 0;
 
   async function submitMessage(event?: FormEvent) {
     event?.preventDefault();
@@ -95,15 +122,17 @@ export default function Home() {
 
   return (
     <main className="app-shell">
+      <div className="ambient ambient-one" aria-hidden="true" />
+      <div className="ambient ambient-two" aria-hidden="true" />
       <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
         <div className="brand">
           <span className="brand-mark"><AudioLines size={21} /></span>
-          <span>Vocalis</span>
+          <span className="brand-copy"><strong>Vocalis</strong><small>AI workspace</small></span>
           <button className="icon-button close-menu" onClick={() => setMenuOpen(false)} aria-label="Close menu"><X size={19} /></button>
         </div>
 
         <button className="new-session" onClick={() => { setMessages([]); setError(""); setInput(""); chooseTab("chat"); }}>
-          <Plus size={17} /> New session
+          <Plus size={17} /> <span>New session</span><kbd>⌘ N</kbd>
         </button>
 
         <nav className="nav-list" aria-label="Main navigation">
@@ -116,9 +145,9 @@ export default function Home() {
         <div className="sidebar-spacer" />
 
         <section className="budget-card">
-          <div className="budget-head"><span>API budget</span><span>$0 / $20</span></div>
-          <div className="budget-track"><span /></div>
-          <p>Usage protection is enabled.</p>
+          <div className="budget-head"><span>Project budget</span><span>${budget?.spendUsd.toFixed(2) || "0.00"} / ${budget?.budgetUsd.toFixed(0) || "20"}</span></div>
+          <div className="budget-track"><span style={{ width: `${Math.max(2, budgetPercent)}%` }} /></div>
+          <p><ShieldCheck size={12} /> Live protection enabled</p>
         </section>
 
         <nav className="nav-list bottom-nav">
@@ -137,9 +166,9 @@ export default function Home() {
         <header className="topbar">
           <div className="topbar-title">
             <button className="icon-button menu-button" onClick={() => setMenuOpen(true)} aria-label="Open menu"><Menu size={20} /></button>
-            <div><span className="eyebrow">AI AGENT STUDIO</span><h1>{title}</h1></div>
+            <div><span className="eyebrow">VOCALIS / AI AGENT STUDIO</span><h1>{title}</h1></div>
           </div>
-          <div className="status-pill"><span className="status-dot" /> CallMissed ready</div>
+          <div className="topbar-actions"><span className="secure-pill"><ShieldCheck size={14} /> Secure session</span><div className="status-pill"><span className="status-dot" /> CallMissed ready</div></div>
         </header>
 
         {tab === "chat" && (
@@ -147,14 +176,20 @@ export default function Home() {
             <div className="chat-feed">
               {messages.length === 0 ? (
                 <div className="welcome">
-                  <span className="welcome-icon"><Sparkles size={28} /></span>
-                  <p className="overline">YOUR CREATIVE COPILOT</p>
-                  <h2>What can we build together?</h2>
-                  <p className="welcome-copy">Ask questions, shape ideas, or turn a rough thought into a practical plan. Your conversation stays focused and easy to follow.</p>
-                  <div className="prompt-grid">
+                  <div className="hero-kicker"><Sparkles size={14} /> ONE WORKSPACE. THREE AI MODES.</div>
+                  <div className="welcome-orbit" aria-hidden="true"><span className="orbit-line orbit-a" /><span className="orbit-line orbit-b two" /><i className="orbit-dot dot-a" /><i className="orbit-dot dot-b" /><div className="orbit-core"><AudioLines size={30} /></div></div>
+                  <h2>Think it. See it. <em>Say it.</em></h2>
+                  <p className="welcome-copy">Move seamlessly from conversation to visual creation and natural voice. Vocalis brings every idea into one intelligent, responsive workspace.</p>
+                  <div className="capability-grid">
+                    <CapabilityCard icon={<BrainCircuit size={20} />} eyebrow="REASON" title="AI conversation" copy="Explore, plan, and refine ideas in context." active onClick={() => chooseTab("chat")} />
+                    <CapabilityCard icon={<Palette size={20} />} eyebrow="CREATE" title="Image studio" copy="Turn a prompt into an original visual." onClick={() => chooseTab("image")} />
+                    <CapabilityCard icon={<Mic size={20} />} eyebrow="CONNECT" title="Live voice" copy="Speak naturally with a real-time agent." onClick={() => chooseTab("voice")} />
+                  </div>
+                  <div className="starter-row"><span><Zap size={14} /> Start with an idea</span><small>Click a prompt to begin</small></div>
+                  <div className="prompt-grid premium-prompts">
                     {starterPrompts.map((prompt) => (
                       <button key={prompt} onClick={() => setInput(prompt)}>
-                        <span>{prompt}</span><ArrowUp size={16} />
+                        <span>{prompt}</span><span className="prompt-arrow"><ArrowUp size={15} /></span>
                       </button>
                     ))}
                   </div>
@@ -188,6 +223,7 @@ export default function Home() {
             <div className="composer-wrap">
               {error && <div className="error-banner">{error}</div>}
               <form className="composer" onSubmit={submitMessage}>
+                <div className="composer-glow" aria-hidden="true" />
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
@@ -203,8 +239,8 @@ export default function Home() {
                   aria-label="Chat message"
                 />
                 <div className="composer-footer">
-                  <span><Sparkles size={14} /> Powered by CallMissed</span>
-                  <button type="submit" disabled={!input.trim() || loading} aria-label="Send message"><ArrowUp size={19} /></button>
+                  <span><span className="model-dot" /><Sparkles size={14} /> Sarvam 105B via CallMissed</span>
+                  <div className="send-group"><kbd>↵</kbd><button type="submit" disabled={!input.trim() || loading} aria-label="Send message"><ArrowUp size={19} /></button></div>
                 </div>
               </form>
               <p className="fine-print">Vocalis can make mistakes. Review important information.</p>
@@ -224,6 +260,10 @@ export default function Home() {
 
 function NavButton({ active, icon, label, badge, onClick }: { active: boolean; icon: React.ReactNode; label: string; badge?: string; onClick: () => void }) {
   return <button className={`nav-button ${active ? "active" : ""}`} onClick={onClick}>{icon}<span>{label}</span>{badge && <small>{badge}</small>}</button>;
+}
+
+function CapabilityCard({ icon, eyebrow, title, copy, active, onClick }: { icon: React.ReactNode; eyebrow: string; title: string; copy: string; active?: boolean; onClick: () => void }) {
+  return <button className={`capability-card ${active ? "active" : ""}`} onClick={onClick}><span className="capability-icon">{icon}</span><span className="capability-copy"><small>{eyebrow}</small><strong>{title}</strong><em>{copy}</em></span><ChevronRight size={17} /></button>;
 }
 
 function ImageStudio() {
@@ -265,6 +305,10 @@ function ImageStudio() {
           <div><p className="overline">IMAGE GENERATION</p><h2>Create something original.</h2></div>
         </div>
         <p className="studio-intro">Describe the visual you need. Vocalis uses the fast CallMissed image model and produces one budget-controlled image per request.</p>
+
+        <div className="idea-chips" aria-label="Image prompt ideas">
+          {imagePromptIdeas.map((idea) => <button type="button" key={idea} onClick={() => setPrompt(idea)}>{idea}</button>)}
+        </div>
 
         <form className="image-form" onSubmit={generate}>
           <label htmlFor="image-prompt">Your prompt</label>
@@ -502,7 +546,7 @@ function UsageDashboard() {
 
       <div className="usage-grid">
         <section className="usage-card budget-overview">
-          <div className="card-heading"><div><strong>Project budget</strong><span>Automatic guard checks the 90-day total</span></div><span>${usage?.budgetUsd.toFixed(0) || "20"} limit</span></div>
+          <div className="card-heading"><div><strong>Project budget</strong><span>Automatic guard checks the baseline-adjusted 30-day total</span></div><span>${usage?.budgetUsd.toFixed(0) || "20"} limit</span></div>
           <div className="budget-visual"><div className="budget-ring" style={{ "--budget": `${budgetPercent * 3.6}deg` } as React.CSSProperties}><div><strong>{budgetPercent.toFixed(0)}%</strong><span>used</span></div></div><div className="budget-detail"><strong>${usage?.spendUsd.toFixed(2) || "0.00"}</strong><span>spent in the last 30 days</span><p>The app stops new paid requests before the configured limit and keeps a $0.25 safety reserve.</p></div></div>
         </section>
 
