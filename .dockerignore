@@ -1,0 +1,12 @@
+.git
+.github
+.next
+.openai
+.wrangler
+dist
+node_modules
+.env*
+!.env.example
+npm-debug.log*
+pnpm-debug.log*
+README.md

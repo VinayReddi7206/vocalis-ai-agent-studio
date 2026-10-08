@@ -1,0 +1,4 @@
+aws_region          = "ap-south-1"
+image_uri           = "123456789012.dkr.ecr.ap-south-1.amazonaws.com/vocalis-agent-studio:CHANGE_ME"
+monthly_budget_usd  = 2
+billing_alert_email = "you@example.com"

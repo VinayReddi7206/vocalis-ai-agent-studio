@@ -1,0 +1,2 @@
+# Project-local Terraform CLI configuration for reproducible validation.
+disable_checkpoint = true
