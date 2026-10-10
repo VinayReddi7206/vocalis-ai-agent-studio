@@ -44,6 +44,9 @@
   ],
   "exclude": [
     "node_modules",
-    "examples"
+    "examples",
+    "artifacts",
+    ".bundle-*",
+    ".source-bundle-*"
   ]
 }
